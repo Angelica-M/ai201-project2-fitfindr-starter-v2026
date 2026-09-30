@@ -1,5 +1,5 @@
 """
-The three FitFindr tools.
+The 3 FitFindr tools.
 
 Each one is a standalone function you can call and test on its own, before any
 of them are wired into the loop. Build and test them one at a time — three

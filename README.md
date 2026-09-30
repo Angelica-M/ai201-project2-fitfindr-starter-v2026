@@ -38,7 +38,6 @@
 <!-- ═══════════════════════ UNIT 3 — THE BUILD ═══════════════════════ -->
 
 ## What This Does
-
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
 
@@ -46,16 +45,90 @@
 ---
 
 ## Tool Inventory
-
 <!-- Four lines per tool. This is worth 2 points and it's the single most
-     common place students lose them.
+     common place students lose them. "Returns a list" earns NOTHING. The 
+     description has to say what is IN the list. The empty case isn't 
+     optional either — it's the thing your loop branches on, and if you 
+     don't decide it here you'll discover it as a crash in Milestone 5. 
+     Ensure that name and type each: `max_price` (float), not "a price". -->
 
-     "Returns a list" earns NOTHING. The description has to say what is IN
-     the list.
+////////////////////////////////////////////////////////////////
+### Architectural Rationale: Specifying Tools Before Implementation
 
-     The empty case isn't optional either — it's the thing your loop branches
-     on, and if you don't decide it here you'll discover it as a crash in
-     Milestone 5. -->
+Defining the explicit interface contracts for `tools.py` before writing implementation code is essential because agent loops rely on deterministic return types to make control-flow decisions. When a tool returns ambiguous, poorly typed, or variable structures (such as returning `None` instead of `[]` on an empty search, or raising unhandled exceptions), the agent loop cannot branch reliably, resulting in unhandled exceptions or infinite execution loops. Establishing explicit function signatures, dictionary schemas, empty-state return values, and branching rules ensures that the agent can evaluate tool outputs programmatically without guessing.
+
+---
+
+### Tool Inventory: `search_listings`
+
+**What it does:**
+Search the dataset for thrift listings that match a keyword description, while applying optional size and price filters.
+
+**Inputs:**
+The inputs for `search_listings` are `description` of type `str` (required search keywords), `size` of type `str | None` (optional size string to filter by, defaulting to `None`), and `max_price` of type `float | None` (optional maximum price ceiling, inclusive, defaulting to `None`).
+
+**What it returns, specifically:**
+It returns a `list[dict]` containing at most `config.SEARCH_RESULT_LIMIT` listing dictionaries sorted in descending order by keyword match score. Each dictionary in the list contains the following fields: `id` (`str`), `title` (`str`), `description` (`str`), `category` (`str`), `style_tags` (`list[str]`), `size` (`str`), `condition` (`str`), `price` (`float`), `colors` (`list[str]`), `brand` (`str | None`), and `platform` (`str`).
+
+**What it returns when it has nothing to give:**
+It returns an empty list `[]` when no items match the filter criteria or score above zero, never returning `None` or raising an exception.
+
+---
+
+### Tool Inventory: `suggest_outfit`
+
+**What it does:**
+Suggest one or two outfit combinations by pairing a selected thrift item with pieces from the user's wardrobe using the language model.
+
+**Inputs:**
+The inputs for `suggest_outfit` are `new_item` of type `dict` (a single listing dictionary containing fields like `title`, `category`, `style_tags`, `colors`, and `brand`) and `wardrobe` of type `dict` (a dictionary containing an `'items'` key whose value is a list of wardrobe item dictionaries, each with `id`, `name`, `category`, `colors`, `style_tags`, and `notes`).
+
+**What it returns, specifically:**
+It returns a non-empty `str` containing model-generated outfit suggestions that explicitly reference specific clothing items owned by the user in their `wardrobe['items']` list.
+
+**What it returns when it has nothing to give:**
+When `wardrobe['items']` is an empty list, it returns a non-empty `str` containing general styling advice for `new_item` instead of returning `""` or raising an exception.
+
+---
+
+### Tool Inventory: `create_fit_card`
+
+**What it does:**
+Generate a short social media post caption for a thrift find based on an outfit recommendation and item details.
+
+**Inputs:**
+The inputs for `create_fit_card` are `outfit` of type `str` (the outfit suggestion text produced by `suggest_outfit`) and `new_item` of type `dict` (the listing dictionary for the target item).
+
+**What it returns, specifically:**
+It returns a `str` containing a two-to-four sentence caption written like an authentic social media post that mentions `new_item['title']`, `new_item['price']`, `new_item['platform']` once each, and captures the specific aesthetic vibe of the find.
+
+**What it returns when it has nothing to give:**
+If `outfit` is empty or consists only of whitespace, it returns a descriptive fallback `str` message stating that an outfit pairing was missing, rather than raising an exception or returning an empty string.
+
+---
+
+### Agent Loop Branching Rule
+
+If `search_listings` returns an empty list, put a message in the session and stop. Otherwise, take the first result and go to `suggest_outfit`.
+
+---
+
+### Specification Audit
+
+Could someone else build these tools from what was written without asking any questions? Yes, because every function contract explicitly specifies exact Python primitive and container types, full dictionary schema keys, boundary filtering behavior (such as non-substring size matching and max price inclusivity), empty-state default returns, and explicit fallback execution paths for LLM prompts.
+
+---
+
+### Milestone Commitment
+
+All three tools in `tools.py` now have fully typed inputs, explicitly specified return structures down to individual dictionary fields, deterministic empty-state return rules, and a locked control-flow rule for the agent loop.
+
+/////////////////////////////////////////////////////////////////
+
+
+
+
+
 
 ### `search_listings`
 
@@ -81,7 +154,6 @@
 ---
 
 ## Planning Loop
-
 <!-- Your branch rule, stated as a rule — the condition AND both paths — plus
      the file and function that holds it.
 
@@ -104,7 +176,6 @@
 ---
 
 ## Sample Run
-
 <!-- Two things go here.
 
      1. One FULL query and its output, pasted as text.
@@ -165,7 +236,6 @@ $ python -c "from tools import create_fit_card; ..."
 ---
 
 ## Run Log — Before
-
 <!-- Five criteria, five tries each, in this exact format.
 
      Five, because your criteria are written out of five. Mark each try PASS
@@ -193,7 +263,6 @@ that produced it:
 ---
 
 ## Verdicts and Diagnoses
-
 <!-- MET or MISSED per criterion against LAST UNIT's target, plus a sentence on
      how you decided.
 
@@ -258,7 +327,6 @@ full. -->
 ---
 
 ## The Improvement
-
 <!-- What you changed, why your diagnosis pointed at it, and the after-run in
      the same table format. One change, measured properly.
 
@@ -279,7 +347,6 @@ full. -->
 | 5.  |  |  |  |  |  |  |  |
 
 **Did it help, and how do I know:**
-
 <!-- If it made things worse, say that. Honestly reported, that earns full
      credit and is more interesting than one that worked. -->
 
@@ -288,7 +355,6 @@ full. -->
 ---
 
 ## What's Still Broken
-
 <!-- For each criterion still missed: what you'd do, and why you stopped where
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
