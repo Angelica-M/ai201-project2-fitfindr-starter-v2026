@@ -145,14 +145,34 @@ Terminal Output:
 ```
 $ python -c "from tools import suggest_outfit; ..."
 ```
+```
+     python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
+```
 Terminal Output: 
+```
+Here are two outfit suggestions that seamlessly integrate the vintage Levi's 501 jeans into their existing wardrobe:
+
+### Outfit 1: Effortless Streetwear Casual
+* **The Vibe:** Relaxed, balanced, and everyday-ready. 
+* **The Look:** Pair the mid-wash Levi's 501s with the **White ribbed tank top** tucked in to define the waist. Layer the **Vintage black denim jacket** over top for a classic denim-on-denim look with contrasting washes. Finish the fit with the **Chunky white sneakers**, the **Brown leather belt**, and the **Black crossbody bag**. 
+
+### Outfit 2: Cozy Contrast
+* **The Vibe:** Comfortable proportions with a hint of grunge edge.
+* **The Look:** Wear the Levi's 501s with the **Oversized grey crewneck sweatshirt**. Because the crewneck is very oversized and drops below the hip, doing a "half-tuck" into the front of the jeans will add shape while keeping that cozy, slouchyfeel. Pair with the **Black combat boots** to ground the look, accented by the **Brown leather belt** and the **Black crossbody bag**.
+```
 
 ### Testing Tool 3 (create_fit_card): 
 
 ```
 $ python -c "from tools import create_fit_card; ..."
 ```
+```
+     python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
+```
 Terminal Output: 
+```
+Found these broken-in vintage Levi's 501 jeans on Depop for $38 and my closet has never looked better. They have that 90s slouch that no brand-new pair can ever quite get right, so I'm styling them today with crisp white sneakers for running errands.
+```
 
 ---
 

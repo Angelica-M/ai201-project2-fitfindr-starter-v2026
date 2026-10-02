@@ -303,7 +303,7 @@ def generate(
             _call_times.append(time.monotonic())
             _session_calls += 1
 
-            call_config = {"temperature": temperature}
+            call_config: dict[str, float | str] = {"temperature": temperature}
             if system:
                 call_config["system_instruction"] = system
             kwargs = {
