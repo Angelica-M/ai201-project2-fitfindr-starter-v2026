@@ -28,6 +28,7 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
 <!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
+I picked 4 of 5 because `search_listings` relies on plain keyword overlap scoring; natural phrasing variations or specific user synonyms might fail to overlap with dataset terms and return zero matches, causing an intentional early stop.
 
 ---
 
@@ -39,66 +40,54 @@ Given a query that matches no listings, the agent stops before calling
 **Why this target:**
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
+This target is 5 of 5 because empty-state branching is controlled by a deterministic Python conditional check (`if not listings:`) in the loop rather than an LLM decision, making failure on an empty search result an unambiguous code defect.
 
 ---
 
-## 3. Something about state
-
-<!-- YOU WRITE THIS ONE.
-
+## 3. Selected item ID persists across tool calls
+<!-- YOU WRITE THIS ONE. Something about state.
      How would you know that the item your search found is the same item the
      next tool received? Name something countable or observable.
-
      This is the criterion people find hardest, because state failure doesn't
      look like state failure — it looks like a tool problem. Something that
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
-
-
+When `search_listings` returns results, the item ID stored in `session["selected_item"]["id"]` matches the `id` field of the `new_item` dictionary passed into both `suggest_outfit` and `create_fit_card` — in 5 of 5 tries.
 
 **Why this target:**
-
-
+State persistence between tools is handled by deterministic Python dict assignments inside the agent loop (`session["selected_item"] = results[0]`), so any discrepancy between what search selected and what subsequent tools received represents a critical data-flow bug that should never occur.
 
 ---
 
-## 4. Something about the fit card
-
-<!-- YOU WRITE THIS ONE.
-
+## 4. Fit card contains required metadata and valid length
+<!-- YOU WRITE THIS ONE. Something about the fit card.
      The fit card calls a model, so the same input can produce different words
      each time. That's not a bug — it's the nature of the tool. So what would
      make it acceptable?
-
      Think about what you'd actually be unhappy to see. A caption that never
      mentions the price? Two different items producing the same opening
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
-
-
+Given a valid outfit suggestion and listing input, `create_fit_card` returns a 2-to-4 sentence caption that explicitly mentions the item's title, price, and platform — in at least 4 of 5 tries.
 
 **Why this target:**
-
-
+I picked 4 of 5 because `create_fit_card` relies on generative LLM output with `TEMPERATURE > 0.0`; while prompt engineering enforces sentence count and metadata inclusion, occasional stochastic variations in model output may omit a required field or alter sentence formatting.
 
 ---
 
-## 5. Your choice
-
-<!-- YOU WRITE THIS ONE TOO.
-
+## 5. Empty wardrobe triggers general styling advice
+<!-- YOU WRITE THIS ONE TOO. Your choice.
      Pick something you actually care about getting right. Speed, the empty
      wardrobe path, what happens when the model can't be reached, whether the
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
-
-
+Given a valid item listing and an empty wardrobe dictionary (`{"items": []}`), `suggest_outfit` returns a non-empty string containing general styling advice without raising an error or returning an empty string — in 5 of 5 tries.
 
 **Why this target:**
-
-
+This is set to 5 of 5 because checking `if not wardrobe.get("items"):` is a deterministic code branch in `suggest_outfit` executed prior to formatting the prompt, guaranteeing that the empty wardrobe prompt path is selected every single time.
 
 ---
+
 
 <!-- ─────────────────────────────────────────────────────────────────────────
      UNIT 4 — read this before you change anything above.
