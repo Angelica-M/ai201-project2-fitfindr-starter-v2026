@@ -147,11 +147,11 @@ def run_agent(query: str, wardrobe: dict) -> dict:
       8. Return the session.
 
     ─────────────────────────────────────────────────────────────────────────
-    IN UNIT 4 you come back and add two things:
-
+    UNIT 4 adds two things. Trace calls are wired up below. Added: 
+    
       • Trace calls. One per step. `trace.step("search_listings", inputs=...,
         returned=...)` — see trace.py. Your README needs the output.
-
+    Still needed / TODO:
       • A handler for ModelUnavailable, so a bad key produces a message rather
         than a stack trace. The import is already at the top of this file.
     """
@@ -161,6 +161,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     count += 1
     trace.check_iterations(count)
     session["parsed"] = _parse_query(session["query"])
+    trace.step("parse_query", inputs=session["query"], returned=session["parsed"])
 
     count += 1
     trace.check_iterations(count)
@@ -175,8 +176,20 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             "No listings matched. Try a higher price ceiling, a different "
             "size, or broader keywords in the description."
         )
+        trace.step(
+            "search_listings",
+            inputs=session["parsed"],
+            returned=session["search_results"],
+            note="branch: empty, stopping before suggest_outfit",
+        )
         return session
 
+    trace.step(
+        "search_listings",
+        inputs=session["parsed"],
+        returned=session["search_results"],
+        note="branch: results found, continuing to suggest_outfit",
+    )
     session["selected_item"] = session["search_results"][0]
 
     count += 1
@@ -184,11 +197,21 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     session["outfit_suggestion"] = suggest_outfit(
         session["selected_item"], session["wardrobe"]
     )
+    trace.step(
+        "suggest_outfit",
+        inputs=session["selected_item"],
+        returned=session["outfit_suggestion"],
+    )
 
     count += 1
     trace.check_iterations(count)
     session["fit_card"] = create_fit_card(
         session["outfit_suggestion"], session["selected_item"]
+    )
+    trace.step(
+        "create_fit_card",
+        inputs=session["outfit_suggestion"],
+        returned=session["fit_card"],
     )
 
     return session
