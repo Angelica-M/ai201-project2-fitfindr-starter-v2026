@@ -45,11 +45,7 @@
 ---
 
 ## Tool Inventory
-<!-- Four lines per tool. This is worth 2 points and it's the single most
-     common place students lose them. "Returns a list" earns NOTHING. The 
-     description has to say what is IN the list. The empty case isn't 
-     optional either — it's the thing your loop branches on, and if you 
-     don't decide it here you'll discover it as a crash in Milestone 5. 
+<!-- Four lines per tool. This is worth 2 points and it's the single most common place students lose them. "Returns a list" earns NOTHING. The description has to say what is IN the list. The empty case isn't optional either — it's the thing your loop branches on, and if you don't decide it here you'll discover it as a crash in Milestone 5. 
      Ensure that name and type each: `max_price` (float), not "a price". -->
 ### Architectural Rationale: Specifying Tools Before Implementation
 
@@ -97,22 +93,22 @@ All three tools in `tools.py` now have fully typed inputs, explicitly specified 
 ---
 
 ## Planning Loop
-<!-- Your branch rule, stated as a rule — the condition AND both paths — plus
-     the file and function that holds it.
+<!-- Your branch rule, stated as a rule — the condition AND both paths — plus the file and function that holds it.
      Like this:
        "If search_listings returns an empty list, put a message in the session
         and stop. Otherwise take the first result and go to suggest_outfit."
         — agent.py::run_agent
-     The grader checks your code against what you claim here, so the file and
-     function have to be real. -->
+     The grader checks your code against what you claim here, so the file and function have to be real. -->
 
 **Branch rule:**
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** <!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** 
+<!-- regex, string splitting, or asking the model — say which -->
 
-**What moves through the session:** <!-- which fields, in what order -->
+**What moves through the session:** 
+<!-- which fields, in what order -->
 
 ---
 
@@ -122,11 +118,10 @@ All three tools in `tools.py` now have fully typed inputs, explicitly specified 
      2. Your three per-tool terminal tests — the command and what it printed. -->
 
 **One full query**
-
 ```
 $ python app.py ask '...'
-
 ```
+
 
 **The three tools, tested one at a time**
 
@@ -177,13 +172,9 @@ Found these broken-in vintage Levi's 501 jeans on Depop for $38 and my closet ha
 ---
 
 ## How I Used AI
-
 <!-- Two specific moments. What you asked, what came back, what you changed.
-
      "I used Claude to help me code" is not enough.
-
-     "I gave Claude my search_listings spec. It returned None on no match
-     instead of an empty list, so I changed it" is the level we want. -->
+     "I gave Claude my search_listings spec. It returned None on no match instead of an empty list, so I changed it" is the level we want. -->
 
 **Moment 1**
 
@@ -263,10 +254,10 @@ that produced it:
 ---
 
 ## Loop Trace
-
 <!-- One full run, printed step by step, with the MCP call visible in it.
 
-     `python app.py ask '...' --trace` once you've added the trace.step()
+     `python app.py ask '...' --trace` 
+     once you've added the trace.step() 
      calls in Milestone 2.
 
      Worth pasting BOTH the happy path and the empty-search path. The empty
@@ -275,21 +266,315 @@ that produced it:
      anyone will ever find that out. -->
 
 **Happy path**
-
 ```
+=== HAPPY PATH ===
+--- full session dump ---
+{'error': None,
+ 'fit_card': 'Picked up this pastel butterfly baby tee on depop for just $18, '
+             'and it’s honestly giving peak 2000s mallrat energy in the best '
+             'way possible. I’m already planning to balance out the tiny fit '
+             'by pairing it with my baggiest low-rise denim and chunky '
+             "sneakers. It’s in mint condition and I'm obsessed with how the "
+             'purple graphics pop against the white cotton.',
+ 'outfit_suggestion': 'Here are two outfit suggestions that pair the Y2K '
+                      'Butterfly Baby Tee with pieces from your existing '
+                      'wardrobe, blending its nostalgic, girly vibe with your '
+                      'streetwear and minimal staples:\n'
+                      '\n'
+                      '### Outfit 1: 2000s Streetwear Contrast\n'
+                      '* **Bottoms:** Baggy straight-leg jeans (dark '
+                      'blue/indigo)\n'
+                      '* **Shoes:** Chunky white sneakers\n'
+                      '* **Accessories:** Black crossbody bag, brown leather '
+                      'belt\n'
+                      '* **Why it works:** The Y2K aesthetic thrives on '
+                      'silhouette contrast. Pairing the ultra-fitted, cropped '
+                      'baby tee with your high-waisted, baggy dark-wash jeans '
+                      'nails the quintessential early-2000s look. The chunky '
+                      'white sneakers tie into the white of the tee, while the '
+                      'brown belt adds a subtle touch of contrast at the '
+                      'waist. \n'
+                      '\n'
+                      '### Outfit 2: Edgy Casual Layering\n'
+                      '* **Outerwear:** Vintage black denim jacket\n'
+                      '* **Bottoms:** Wide-leg khaki trousers (khaki/tan)\n'
+                      '* **Shoes:** Black combat boots\n'
+                      '* **Accessories:** Black crossbody bag\n'
+                      '* **Why it works:** This look leans into a mix of '
+                      'cottagecore sweetness and grunge edge. Tucking the '
+                      'butterfly tee into the wide-leg khaki trousers keeps '
+                      'the proportions sharp, while throwing on the slightly '
+                      'cropped black denim jacket and black combat boots '
+                      'grounds the pastel pink and purple graphic print with a '
+                      'tougher, grounded finish.',
+ 'parsed': {'description': 'vintage graphic tee',
+            'max_price': 30.0,
+            'size': None},
+ 'query': 'looking for a vintage graphic tee under $30',
+ 'search_results': [{'brand': None,
+                     'category': 'tops',
+                     'colors': ['white', 'pink', 'purple'],
+                     'condition': 'excellent',
+                     'description': 'Super cute early 2000s baby tee with '
+                                    'butterfly graphic. Fitted crop length. '
+                                    'Tag says medium but fits like a small.',
+                     'id': 'lst_002',
+                     'platform': 'depop',
+                     'price': 18.0,
+                     'size': 'S/M',
+                     'style_tags': ['y2k',
+                                    'vintage',
+                                    'graphic tee',
+                                    'cottagecore'],
+                     'title': 'Y2K Baby Tee — Butterfly Print'},
+                    {'brand': None,
+                     'category': 'tops',
+                     'colors': ['black'],
+                     'condition': 'good',
+                     'description': 'Vintage-style bootleg tee with faded '
+                                    'graphic. Slightly boxy fit. 100% cotton, '
+                                    'soft and worn-in.',
+                     'id': 'lst_006',
+                     'platform': 'depop',
+                     'price': 24.0,
+                     'size': 'L',
+                     'style_tags': ['graphic tee',
+                                    'vintage',
+                                    'grunge',
+                                    'streetwear',
+                                    'band tee'],
+                     'title': 'Graphic Tee — 2003 Tour Bootleg Style'},
+                    {'brand': None,
+                     'category': 'tops',
+                     'colors': ['grey', 'charcoal'],
+                     'condition': 'fair',
+                     'description': 'Faded grey band-style tee with distressed '
+                                    'graphic. Crew neck. Fits boxy. Well-loved '
+                                    'but no holes or major damage.',
+                     'id': 'lst_033',
+                     'platform': 'depop',
+                     'price': 19.0,
+                     'size': 'L',
+                     'style_tags': ['vintage',
+                                    'grunge',
+                                    'band tee',
+                                    'graphic tee',
+                                    'streetwear'],
+                     'title': 'Vintage Band Tee — Faded Grey'},
+                    {'brand': None,
+                     'category': 'tops',
+                     'colors': ['black', 'charcoal'],
+                     'condition': 'fair',
+                     'description': 'Faded black pullover hoodie with '
+                                    'barely-visible vintage graphic on the '
+                                    'chest. Cozy interior. Some pilling but '
+                                    'adds to the worn-in look.',
+                     'id': 'lst_015',
+                     'platform': 'depop',
+                     'price': 26.0,
+                     'size': 'L',
+                     'style_tags': ['vintage',
+                                    'grunge',
+                                    'graphic',
+                                    'streetwear'],
+                     'title': 'Vintage Graphic Hoodie — Faded Black'},
+                    {'brand': None,
+                     'category': 'tops',
+                     'colors': ['black'],
+                     'condition': 'excellent',
+                     'description': 'Sheer black mesh long-sleeve. Great for '
+                                    'layering under a graphic tee or over a '
+                                    'bralette. Stretchy material, fits true to '
+                                    'size.',
+                     'id': 'lst_017',
+                     'platform': 'depop',
+                     'price': 15.0,
+                     'size': 'S/M',
+                     'style_tags': ['y2k', 'grunge', 'goth', 'layering'],
+                     'title': 'Mesh Long-Sleeve Top — Black'},
+                    {'brand': 'Woolrich',
+                     'category': 'tops',
+                     'colors': ['red', 'black'],
+                     'condition': 'good',
+                     'description': 'Classic oversized flannel. Great layering '
+                                    'piece. A few tiny pulls in the fabric but '
+                                    'nothing visible when worn.',
+                     'id': 'lst_003',
+                     'platform': 'thredUp',
+                     'price': 22.0,
+                     'size': 'XL (oversized)',
+                     'style_tags': ['grunge',
+                                    'vintage',
+                                    'flannel',
+                                    'streetwear',
+                                    'layering'],
+                     'title': 'Oversized Flannel Shirt — Plaid Red/Black'},
+                    {'brand': None,
+                     'category': 'bottoms',
+                     'colors': ['khaki', 'tan'],
+                     'condition': 'fair',
+                     'description': 'Y2K era low-rise cargo pants. Lots of '
+                                    'pockets. Khaki color, slightly distressed '
+                                    'at the hems. Great for layering with a '
+                                    'long tee.',
+                     'id': 'lst_011',
+                     'platform': 'poshmark',
+                     'price': 27.0,
+                     'size': 'W29',
+                     'style_tags': ['y2k', 'cargo', '2000s', 'streetwear'],
+                     'title': 'Low-Rise Cargo Pants — Khaki'},
+                    {'brand': None,
+                     'category': 'tops',
+                     'colors': ['navy'],
+                     'condition': 'good',
+                     'description': 'Perfectly faded navy crewneck. Genuinely '
+                                    'vintage — not manufactured distressed. '
+                                    'Ribbed cuffs and hem. No graphics, clean.',
+                     'id': 'lst_012',
+                     'platform': 'thredUp',
+                     'price': 20.0,
+                     'size': 'XL (fits oversized)',
+                     'style_tags': ['vintage',
+                                    'basics',
+                                    'oversized',
+                                    'classic'],
+                     'title': 'Oversized Crewneck Sweatshirt — Vintage Navy'},
+                    {'brand': None,
+                     'category': 'bottoms',
+                     'colors': ['ivory', 'dusty pink', 'green'],
+                     'condition': 'good',
+                     'description': 'Delicate 90s slip dress in a muted floral '
+                                    'print. Midi length, adjustable straps. '
+                                    'Light snag on the side seam — not visible '
+                                    'when worn.',
+                     'id': 'lst_013',
+                     'platform': 'depop',
+                     'price': 30.0,
+                     'size': 'M',
+                     'style_tags': ['90s',
+                                    'vintage',
+                                    'feminine',
+                                    'floral',
+                                    'cottagecore'],
+                     'title': '90s Silk Slip Dress — Floral, Midi Length'},
+                    {'brand': None,
+                     'category': 'accessories',
+                     'colors': ['brown'],
+                     'condition': 'excellent',
+                     'description': 'Genuine leather braided belt. Adjustable, '
+                                    'multiple holes. Classic Western buckle. '
+                                    'Can be dressed up or down.',
+                     'id': 'lst_014',
+                     'platform': 'thredUp',
+                     'price': 12.0,
+                     'size': 'One Size (adjustable)',
+                     'style_tags': ['vintage',
+                                    'western',
+                                    'classic',
+                                    'earth tones'],
+                     'title': 'Leather Belt — Brown, Braided'}],
+ 'selected_item': {'brand': None,
+                   'category': 'tops',
+                   'colors': ['white', 'pink', 'purple'],
+                   'condition': 'excellent',
+                   'description': 'Super cute early 2000s baby tee with '
+                                  'butterfly graphic. Fitted crop length. Tag '
+                                  'says medium but fits like a small.',
+                   'id': 'lst_002',
+                   'platform': 'depop',
+                   'price': 18.0,
+                   'size': 'S/M',
+                   'style_tags': ['y2k',
+                                  'vintage',
+                                  'graphic tee',
+                                  'cottagecore'],
+                   'title': 'Y2K Baby Tee — Butterfly Print'},
+ 'wardrobe': {'items': [{'category': 'bottoms',
+                         'colors': ['dark blue', 'indigo'],
+                         'id': 'w_001',
+                         'name': 'Baggy straight-leg jeans, dark wash',
+                         'notes': 'High-waisted, sits above the hip',
+                         'style_tags': ['denim', 'streetwear', 'baggy']},
+                        {'category': 'bottoms',
+                         'colors': ['khaki', 'tan'],
+                         'id': 'w_002',
+                         'name': 'Wide-leg khaki trousers',
+                         'notes': None,
+                         'style_tags': ['earth tones', 'minimal', 'wide-leg']},
+                        {'category': 'tops',
+                         'colors': ['white'],
+                         'id': 'w_003',
+                         'name': 'White ribbed tank top',
+                         'notes': 'Goes with everything',
+                         'style_tags': ['basics', 'minimal', 'fitted']},
+                        {'category': 'tops',
+                         'colors': ['grey', 'charcoal'],
+                         'id': 'w_004',
+                         'name': 'Oversized grey crewneck sweatshirt',
+                         'notes': 'Really oversized — drops below the hip',
+                         'style_tags': ['oversized', 'basics', 'cozy']},
+                        {'category': 'tops',
+                         'colors': ['black'],
+                         'id': 'w_005',
+                         'name': 'Black cropped zip hoodie',
+                         'notes': None,
+                         'style_tags': ['athletic', 'streetwear', 'cropped']},
+                        {'category': 'outerwear',
+                         'colors': ['black'],
+                         'id': 'w_006',
+                         'name': 'Vintage black denim jacket',
+                         'notes': 'Slightly cropped',
+                         'style_tags': ['denim', 'vintage', 'classic']},
+                        {'category': 'shoes',
+                         'colors': ['white'],
+                         'id': 'w_007',
+                         'name': 'Chunky white sneakers',
+                         'notes': None,
+                         'style_tags': ['sneakers', 'chunky', 'streetwear']},
+                        {'category': 'shoes',
+                         'colors': ['black'],
+                         'id': 'w_008',
+                         'name': 'Black combat boots',
+                         'notes': 'Lace-up, mid-ankle height',
+                         'style_tags': ['boots', 'grunge', 'classic']},
+                        {'category': 'accessories',
+                         'colors': ['brown'],
+                         'id': 'w_009',
+                         'name': 'Brown leather belt',
+                         'notes': None,
+                         'style_tags': ['classic',
+                                        'earth tones',
+                                        'accessories']},
+                        {'category': 'accessories',
+                         'colors': ['black'],
+                         'id': 'w_010',
+                         'name': 'Black crossbody bag',
+                         'notes': None,
+                         'style_tags': ['minimal',
+                                        'accessories',
+                                        'everyday']}]}}
 
+Same object identity (session[selected_item] is new_item passed to suggest_outfit): True
+item id in session: lst_002
+item id passed to suggest_outfit: lst_002
 ```
 
 **Empty search**
+```
+=== IMPOSSIBLE QUERY ===
+parsed: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+search_results: []
+selected_item: None
+outfit_suggestion: None
+fit_card: None
+error: No listings matched. Try a higher price ceiling, a different size, or broader keywords in the description.
 
+suggest_outfit was called: False
+create_fit_card was called: False
 ```
 
-```
-
-**On the MCP move:** <!-- what changed in your code, and whether anything
-behaved differently afterwards. If the rewire didn't work, say exactly where it
-broke — the error text and the last thing that worked. That earns the point in
-full. -->
+**On the MCP move:** 
+<!-- what changed in your code, and whether anything behaved differently afterwards. If the rewire didn't work, say exactly where it broke — the error text and the last thing that worked. That earns the point in full. -->
 
 
 

@@ -13,10 +13,60 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import re
+
 import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
 from generate import ModelUnavailable
+
+
+# ── query parsing ─────────────────────────────────────────────────────────────
+
+_SIZE_PHRASE = re.compile(r"\bsize\s+([A-Za-z0-9]+(?:[./-][A-Za-z0-9]+)*)", re.IGNORECASE)
+_STANDALONE_SIZE = re.compile(r"\b(XXS|XS|S|M|L|XL|XXL)\b", re.IGNORECASE)
+_PRICE_WITH_CUE = re.compile(
+    r"(?:under|below|less than|max(?:imum)?)\s*\$?\s*(\d+(?:\.\d+)?)", re.IGNORECASE
+)
+_BARE_PRICE = re.compile(r"\$\s*(\d+(?:\.\d+)?)")
+
+_FILLER_WORDS = {
+    "looking", "for", "a", "an", "under", "below", "less", "than",
+    "max", "maximum", "size",
+}
+
+
+def _parse_query(query: str) -> dict:
+    """
+    Pull a description, size, and max_price out of a plain-language query.
+
+    Regex-based rather than model-based — deterministic and free, and this
+    query shape (a price cue, an optional "size X", some keywords) doesn't
+    need the model to parse reliably.
+    """
+    price_match = _PRICE_WITH_CUE.search(query) or _BARE_PRICE.search(query)
+    max_price = float(price_match.group(1)) if price_match else None
+
+    size_match = _SIZE_PHRASE.search(query)
+    size = size_match.group(1) if size_match else None
+    if size is None:
+        standalone_match = _STANDALONE_SIZE.search(query)
+        if standalone_match:
+            size = standalone_match.group(1)
+
+    cleaned = _PRICE_WITH_CUE.sub(" ", query)
+    cleaned = _BARE_PRICE.sub(" ", cleaned)
+    cleaned = _SIZE_PHRASE.sub(" ", cleaned)
+    if size_match is None and size is not None:
+        cleaned = _STANDALONE_SIZE.sub(" ", cleaned, count=1)
+
+    words = [
+        w for w in re.findall(r"[A-Za-z0-9']+", cleaned)
+        if w.lower() not in _FILLER_WORDS
+    ]
+    description = " ".join(words) if words else query
+
+    return {"description": description, "size": size, "max_price": max_price}
 
 
 # ── session state ─────────────────────────────────────────────────────────────
@@ -106,9 +156,41 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         than a stack trace. The import is already at the top of this file.
     """
     session = new_session(query, wardrobe)
+    count = 0
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    count += 1
+    trace.check_iterations(count)
+    session["parsed"] = _parse_query(session["query"])
+
+    count += 1
+    trace.check_iterations(count)
+    session["search_results"] = search_listings(
+        description=session["parsed"]["description"],
+        size=session["parsed"]["size"],
+        max_price=session["parsed"]["max_price"],
+    )
+
+    if not session["search_results"]:
+        session["error"] = (
+            "No listings matched. Try a higher price ceiling, a different "
+            "size, or broader keywords in the description."
+        )
+        return session
+
+    session["selected_item"] = session["search_results"][0]
+
+    count += 1
+    trace.check_iterations(count)
+    session["outfit_suggestion"] = suggest_outfit(
+        session["selected_item"], session["wardrobe"]
+    )
+
+    count += 1
+    trace.check_iterations(count)
+    session["fit_card"] = create_fit_card(
+        session["outfit_suggestion"], session["selected_item"]
+    )
+
     return session
 
 
