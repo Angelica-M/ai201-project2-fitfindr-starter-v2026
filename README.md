@@ -39,8 +39,7 @@
 
 ## What This Does
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
-
-
+A user types a plain-language thrifting request, like `"vintage graphic tee under $30"`, into `python app.py ask`. FitFindr pulls a description, a size, and a price ceiling out of that request, searches a mock listings dataset for the best match, and — if it found one — asks a language model to suggest an outfit pairing the item with pieces from the user's own wardrobe and to write a short, caption-style "fit card" naming the item, its price, and the platform it's on. If nothing in the dataset matches what was asked for, it stops immediately with a message naming what to change (the price ceiling, the size, or the keywords) instead of guessing at an outfit for an item that doesn't exist.
 
 ---
 
@@ -100,15 +99,13 @@ All three tools in `tools.py` now have fully typed inputs, explicitly specified 
         — agent.py::run_agent
      The grader checks your code against what you claim here, so the file and function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** If `search_listings` returns an empty list, put a message in `session["error"]` naming what the user could change (price ceiling, size, or keywords) and return immediately — do not call `suggest_outfit`. Otherwise, take `search_results[0]` as `session["selected_item"]` and continue on to `suggest_outfit` and then `create_fit_card`.
 
 **Where it lives:** `agent.py::run_agent`
 
-**How the query is parsed:** 
-<!-- regex, string splitting, or asking the model — say which -->
+**How the query is parsed:** Regex, in `agent.py::_parse_query`. A price-cue pattern (`under`/`below`/`less than`/`max` followed by an optional `$` and a number) or a bare `$NN` sets `max_price`; an explicit `"size X"` phrase, or failing that a standalone size token (`XXS`/`XS`/`S`/`M`/`L`/`XL`/`XXL`), sets `size`; whatever words are left after stripping those phrases and filler words (`"looking for"`, `"a"`, `"under"`, etc.) become the `description` keywords passed to `search_listings`.
 
-**What moves through the session:** 
-<!-- which fields, in what order -->
+**What moves through the session:** `query` → `parsed` (`description`, `size`, `max_price`) → `search_results` → `selected_item` (first result) → `outfit_suggestion` → `fit_card`. Each tool call reads its inputs back out of the session dict at the call site rather than from a carried-over local variable, so `session["selected_item"]` is provably the same object `suggest_outfit` and `create_fit_card` receive (verified with an `is` check — see Loop Trace).
 
 ---
 
@@ -119,9 +116,36 @@ All three tools in `tools.py` now have fully typed inputs, explicitly specified 
 
 **One full query**
 ```
-$ python app.py ask '...'
+$ python app.py ask 'vintage graphic tee under $30'
 ```
+Terminal Output: 
+```
+     Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
 
+     Outfit:   Here are two outfit suggestions that combine the new Y2K Butterfly Baby Tee with pieces from your existing wardrobe, blending its nostalgic, feminine vibe with your streetwear and minimal staples:
+
+     ### Outfit 1: 2000s Streetwear Contrast
+     * **Top:** Y2K Baby Tee — Butterfly Print
+     * **Bottoms:** Baggy straight-leg jeans, dark wash
+     * **Outerwear:** Vintage black denim jacket *(worn open)*
+     * **Shoes:** Chunky white sneakers
+     * **Accessories:** Black crossbody bag
+
+     **Why it works:** The tight, fitted silhouette of the baby tee creates a great Y2K-authentic proportion contrast against your high-waisted, baggy dark-wash jeans. Adding the slightly cropped black denim jacket ties in the dark tones, while the chunky white sneakers echo the white in the graphic print to pull the whole look together.
+
+     ---
+
+     ### Outfit 2: Soft-Edged Earth Tones
+     * **Top:** Y2K Baby Tee — Butterfly Print
+     * **Bottoms:** Wide-leg khaki trousers
+     * **Accessories:** Brown leather belt
+
+     **Why it works:** This look leans into the "cottagecore meets Y2K" tag by mixing the pink and purple butterfly print with the warm, minimal earth tones of your khaki trousers. Tucking the fitted baby tee into the high-waisted wide-leg trousers (accentuated with your brown leather belt) creates a clean, balanced silhouette that feels a bit more grounded and mature.
+
+     Fit card: Found the ultimate early 2000s butterfly tee on depop for just $18, and I am officially ready to channel my inner pop princess. The pink and purple graphic print is giving major Limited Too nostalgia, so obviously I'm pairing it with baggy low-rise jeans. It's in mint condition, which honestly feels like a minor thrift miracle.
+
+     2 model calls this session, 742 prompt + 383 output tokens
+```
 
 **The three tools, tested one at a time**
 
