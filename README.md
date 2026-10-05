@@ -202,15 +202,15 @@ Found these broken-in vintage Levi's 501 jeans on Depop for $38 and my closet ha
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I was getting `google.genai.errors.ClientError: 400 INVALID_ARGUMENT ... API key not valid` from `suggest_outfit`, and I told Claude my key in `.env` was active and correct, so I needed help troubleshooting further.
+- *What came back:* Claude read the raw bytes of `.env` (masking the key values) rather than trusting my assumption, and found two problems: a second key was saved under the variable name `GEMINI_API_KEY1` instead of `GEMINI_API_KEY` — a typo that meant the app was still reading the old, rejected key — and both keys started with `AQ.Ab8RN6...` rather than the standard Google AI Studio `AIzaSy...` prefix, suggesting the wrong kind of credential had been copied in.
+- *What I changed:* I went back to aistudio.google.com, copied the actual `AIzaSy...` API key, and replaced the `.env` file with a single correctly-named `GEMINI_API_KEY=` line instead of the two conflicting ones.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* I asked Claude to look at a Pylance error on `call_config["system_instruction"] = system` in `generate.py` and tell me how to fix it, since I wasn't sure if it was safe to ignore.
+- *What came back:* Claude ran Pyright directly to confirm the exact error (`reportArgumentType` — `str` isn't assignable to `float`) rather than guessing, and explained why it happens: `call_config = {"temperature": temperature}` lets the type checker infer `dict[str, float]`, so assigning a `str` value into it on the next line is flagged, even though it runs fine at runtime.
+- *What I changed:* I had Claude add an explicit type annotation, `call_config: dict[str, float | str] = {"temperature": temperature}`, and confirmed with a second Pyright run that it dropped to 0 errors without changing any runtime behavior.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
@@ -662,8 +662,27 @@ Sample of Full Session Dump:
 
 **On the MCP move:** 
 <!-- what changed in your code, and whether anything behaved differently afterwards. If the rewire didn't work, say exactly where it broke — the error text and the last thing that worked. That earns the point in full. -->
+`search_listings` is now served over MCP instead of called directly. Three changes:
 
+1. **`mcp_server.py`** — uncommented the `@mcp.tool()` registration and wrote the description from scratch (not copied from the docstring), naming units (`max_price` in whole or fractional US dollars), the non-substring size-matching behavior, and the empty-list return explicitly, since this description is read by an agent that can't see `tools.py`.
+2. **`agent.py`** — removed the direct `from tools import search_listings` import and swapped the call in `run_agent()`:
+   ```python
+   session["search_results"] = call_tool("search_listings", {
+       "description": session["parsed"]["description"],
+       "size": session["parsed"]["size"],
+       "max_price": session["parsed"]["max_price"],
+   })
+   ```
+3. **`trace.step()` label** — renamed the step from `"search_listings"` to `"search_listings (via MCP)"` so the move is visible in the Loop Trace, per `trace.py`'s own guidance.
 
+**Did anything behave differently?** No. Before swapping the call in `run_agent()`, I compared the two directly:
+```
+via MCP, count: 6
+direct call, count: 6
+same shape (list of dicts): True
+identical content: True
+```
+Then re-ran both the happy path and the empty-search path end to end through `python app.py ask ... --trace` — both produced the same results as before the rewire, just with `[2] search_listings (via MCP)` in place of `[2] search_listings` in the trace. The rewire worked on the first attempt; no failure to document here.
 
 ---
 

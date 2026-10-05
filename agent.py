@@ -17,7 +17,8 @@ import re
 
 import config
 import trace
-from tools import search_listings, suggest_outfit, create_fit_card
+from mcp_client import call_tool
+from tools import suggest_outfit, create_fit_card
 from generate import ModelUnavailable
 
 
@@ -165,11 +166,11 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
     count += 1
     trace.check_iterations(count)
-    session["search_results"] = search_listings(
-        description=session["parsed"]["description"],
-        size=session["parsed"]["size"],
-        max_price=session["parsed"]["max_price"],
-    )
+    session["search_results"] = call_tool("search_listings", {
+        "description": session["parsed"]["description"],
+        "size": session["parsed"]["size"],
+        "max_price": session["parsed"]["max_price"],
+    })
 
     if not session["search_results"]:
         session["error"] = (
@@ -177,7 +178,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             "size, or broader keywords in the description."
         )
         trace.step(
-            "search_listings",
+            "search_listings (via MCP)",
             inputs=session["parsed"],
             returned=session["search_results"],
             note="branch: empty, stopping before suggest_outfit",
@@ -185,7 +186,7 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         return session
 
     trace.step(
-        "search_listings",
+        "search_listings (via MCP)",
         inputs=session["parsed"],
         returned=session["search_results"],
         note="branch: results found, continuing to suggest_outfit",
