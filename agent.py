@@ -148,13 +148,12 @@ def run_agent(query: str, wardrobe: dict) -> dict:
       8. Return the session.
 
     ─────────────────────────────────────────────────────────────────────────
-    UNIT 4 adds two things. Trace calls are wired up below. Added: 
-    
-      • Trace calls. One per step. `trace.step("search_listings", inputs=...,
-        returned=...)` — see trace.py. Your README needs the output.
-    Still needed / TODO:
-      • A handler for ModelUnavailable, so a bad key produces a message rather
-        than a stack trace. The import is already at the top of this file.
+    UNIT 4 adds two things, both done below:
+
+      • Trace calls. One per step — see trace.py.
+      • A handler for ModelUnavailable around each model-calling tool, so a
+        bad key produces a message in session["error"] rather than an
+        unhandled exception.
     """
     session = new_session(query, wardrobe)
     count = 0
@@ -195,9 +194,18 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
     count += 1
     trace.check_iterations(count)
-    session["outfit_suggestion"] = suggest_outfit(
-        session["selected_item"], session["wardrobe"]
-    )
+    try:
+        session["outfit_suggestion"] = suggest_outfit(
+            session["selected_item"], session["wardrobe"]
+        )
+    except ModelUnavailable as exc:
+        session["error"] = str(exc)
+        trace.step(
+            "suggest_outfit",
+            inputs=session["selected_item"],
+            note="branch: model unavailable, stopping before create_fit_card",
+        )
+        return session
     trace.step(
         "suggest_outfit",
         inputs=session["selected_item"],
@@ -206,9 +214,18 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
     count += 1
     trace.check_iterations(count)
-    session["fit_card"] = create_fit_card(
-        session["outfit_suggestion"], session["selected_item"]
-    )
+    try:
+        session["fit_card"] = create_fit_card(
+            session["outfit_suggestion"], session["selected_item"]
+        )
+    except ModelUnavailable as exc:
+        session["error"] = str(exc)
+        trace.step(
+            "create_fit_card",
+            inputs=session["outfit_suggestion"],
+            note="branch: model unavailable, stopping",
+        )
+        return session
     trace.step(
         "create_fit_card",
         inputs=session["outfit_suggestion"],

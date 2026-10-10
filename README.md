@@ -212,11 +212,7 @@ Found these broken-in vintage Levi's 501 jeans on Depop for $38 and my closet ha
 - *What came back:* Claude ran Pyright directly to confirm the exact error (`reportArgumentType` — `str` isn't assignable to `float`) rather than guessing, and explained why it happens: `call_config = {"temperature": temperature}` lets the type checker infer `dict[str, float]`, so assigning a `str` value into it on the next line is flagged, even though it runs fine at runtime.
 - *What I changed:* I had Claude add an explicit type annotation, `call_config: dict[str, float | str] = {"temperature": temperature}`, and confirmed with a second Pyright run that it dropped to 0 errors without changing any runtime behavior.
 
-<!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
-
-     Don't fill these in during unit 3.
-     ═══════════════════════════════════════════════════════════════════ -->
-
+<!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════ -->
 ---
 
 ## Run Log — Before
@@ -683,6 +679,71 @@ same shape (list of dicts): True
 identical content: True
 ```
 Then re-ran both the happy path and the empty-search path end to end through `python app.py ask ... --trace` — both produced the same results as before the rewire, just with `[2] search_listings (via MCP)` in place of `[2] search_listings` in the trace. The rewire worked on the first attempt; no failure to document here.
+
+### Failure Handling
+
+Of the three failure modes tested, only **model unavailable** actually crashed — empty search and empty wardrobe already returned clean messages/advice with no handler needed.
+
+**What I added:** `agent.py::run_agent` now wraps both model-calling tool calls — `suggest_outfit` and `create_fit_card` — in `try/except ModelUnavailable`. On that exception, `session["error"]` is set to the exception's own message (built in `generate.py::_explain`, e.g. *"The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com."*) and `run_agent` returns immediately — the same stop-the-session pattern already used for the empty-search branch, instead of letting the exception propagate.
+
+**Before:** a bad key crashed out of `run_agent()` entirely. The only reason a CLI user never saw a raw stack trace was `app.py::main()`'s generic top-level `except Exception` catch — a caller using `run_agent()` directly (not through `app.py`) got an unhandled exception and no usable session.
+
+**After**, verified by corrupting one character of `GEMINI_API_KEY` and re-running:
+```
+[3] suggest_outfit
+      in:  Platform Sneakers — White Chunky Sole ($48.0, poshmark)
+      →    branch: model unavailable, stopping before create_fit_card
+
+  The model rejected your API key. Check GEMINI_API_KEY in your .env file, or create a fresh key at aistudio.google.com.
+
+1 model calls this session
+```
+`session["error"]` is set to a message naming what broke (a rejected key) and what to do about it (check `.env`, or make a fresh key); `session["outfit_suggestion"]` and `session["fit_card"]` stay `None`; `run_agent` returns a normal session dict instead of raising. The key was restored immediately after this test.
+
+### Loop Trace — full run, after the fix
+
+```
+$ python app.py ask 'vintage graphic tee under $30' --trace
+
+[1] parse_query
+      in:  vintage graphic tee under $30
+      out: dict with keys: description, size, max_price
+[2] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+      →    branch: results found, continuing to suggest_outfit
+[3] suggest_outfit
+      in:  Y2K Baby Tee — Butterfly Print ($18.0, depop)
+      out: Here are two ways to style the Y2K Butterfly Baby Tee using pieces already in your wardrobe:  ### Outfit 1: 20…
+[4] create_fit_card
+      in:  Here are two ways to style the Y2K Butterfly Baby Tee using pieces already in your wardrobe:  ### Outfit 1: 20…
+      out: Found this sweet little butterfly tee for $18 on Depop and I'm obsessed with the pink and purple print. I've b…
+
+  Found:    Y2K Baby Tee — Butterfly Print — $18.0 on depop
+
+  Outfit:   Here are two ways to style the Y2K Butterfly Baby Tee using pieces already in your wardrobe:
+
+### Outfit 1: 2000s Streetwear Contrast
+* **Top:** Y2K Baby Tee — Butterfly Print
+* **Bottoms:** Baggy straight-leg jeans (dark wash)
+* **Outerwear:** Vintage black denim jacket
+* **Shoes:** Chunky white sneakers
+* **Accessories:** Black crossbody bag
+
+**Why it works:** The tight, cropped fit of the baby tee creates a great silhouette when paired with high-waisted, baggy dark-wash jeans—a classic Y2K proportion trick. Layering the slightly cropped black denim jacket on top adds a bit of edge and ties in with the casual streetwear vibe of the chunky white sneakers. 
+
+### Outfit 2: Casual Earth-Tone Mix
+* **Top:** Y2K Baby Tee — Butterfly Print
+* **Bottoms:** Wide-leg khaki trousers
+* **Accessories:** Brown leather belt + Black crossbody bag
+* **Shoes:** Black combat boots 
+
+**Why it works:** This outfit blends the Y2K aesthetic of the tee with the minimal, earthy tones of your wide-leg trousers. Tucking in the baby tee and wearing the brown leather belt highlights your waist against the loose trousers. Finishing the look with black combat boots adds a subtle grunge contrast to the sweet pink and purple butterfly print.
+
+  Fit card: Found this sweet little butterfly tee for $18 on Depop and I'm obsessed with the pink and purple print. I've been living in tiny baby tees lately because they look so good balanced out with baggy, low-slung denim. It's giving major Y2K mall rat energy in the best way possible.
+
+2 model calls this session, 724 prompt + 357 output tokens
+```
 
 ---
 
