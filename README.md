@@ -758,3 +758,74 @@ Then re-ran both the happy path and the empty-search path end to end through `py
 ---
 
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**
+
+⛓️‍💥 **Web Sequence Diagram:**
+<img src="assets/FitFindr_webSeqDiagram.jpg" alt="Web Sequence Diagram" width="400"/>
+
+# FitFinder (`fitfitr`) Architecture & Execution Flow
+
+This section provides an architectural breakdown and sequence analysis of the **FitFinder** (`fitfitr`) agent application. Designed as a reference for the project **README**, this breakdown maps out the end-to-end request lifecycle, client-server decoupling, and tool-calling mechanics powered by FastMCP over `stdio` transport.
+
+---
+
+## 1. Architectural Components & Lifelines
+
+The sequence diagram defines four primary participants across the system architecture:
+
+* **`Terminal (end user)`**: The interactive entry point where the end user initiates the session by providing raw inputs (query and wardrobe data).
+* **`agent.py (harness)`**: The central orchestration harness responsible for query parsing, agentic reasoning, state management, tool invocation delegation, and final response rendering.
+* **`MCP client`**: The Model Context Protocol client layer that bridges the harness agent to the underlying MCP server infrastructure.
+* **`MCP server`**: The backend server instance executing domain-specific logic and querying underlying data sources.
+
+---
+
+## 2. End-to-End Sequence Execution Flow
+```
+[Terminal (end user)] -> [agent.py (harness)] -> [MCP client] -> [MCP server]
+```
+
+### Phase 1: Ingestion & Query Parsing
+
+1. **User Input**: The user inputs a query and wardrobe context into the terminal:
+* *Message*: `Enter query and wardrobe`
+
+2. **Harness Parsing**: `agent.py (harness)` processes the raw input string internally:
+* *Operation*: `Parse query into description, size, and max_price`
+* *Extracted Parameters*:
+* `description` (String)
+* `size` (String/Descriptor)
+* `max_price` (Numeric/Constraint)
+
+### Phase 2: MCP Tool Invocation & Transport
+
+3. **Tool Request**: The harness initiates a tool call via the MCP client:
+* *Message*: `call_tool("search_listings", arguments)`
+* *Target Tool Name*: `"search_listings"`
+* *Payload*: `arguments` object containing the parsed parameters.
+
+4. **Server Transport Initialization**: The MCP client bridges the call to the server:
+* *Message*: `Start server over stdio and request search_listings`
+* *Transport Mechanism*: Standard Input/Output (`stdio`).
+
+### Phase 3: Server Execution & Data Retrieval
+
+5. **Listings Lookup**: The `MCP server` executes the search logic against internal datasets:
+* *Operation*: `Run search_listings against listings data`
+
+6. **Data Return**: The server serializes and returns matching records back through the client:
+* *Message*: `Return matching listing dictionaries` (returning structured listing data objects).
+* *Harness Unwrapping*: `MCP client` unwraps the payload: `Unwrap and return search results`.
+
+### Phase 4: Conditional Validation & Business Logic Guardrail
+
+7. **Empty Results Guardrail**:
+> **Note / Constraint (Explicitly Defined in Diagram):**
+> *If results are empty, create an error message and stop before outfit tools.*
+
+8. **Successful Path (Outfit Generation)**: If results are present, the harness proceeds with downstream execution:
+* *Operation*: `Select first listing; suggest outfit; create fit card`
+
+### Phase 5: Response Rendering
+
+9. **Session Completion**: The harness returns the final compiled state to the user terminal:
+* *Message*: `Return session with fit card or actionable no-results message`

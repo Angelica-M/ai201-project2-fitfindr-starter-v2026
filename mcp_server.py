@@ -66,8 +66,14 @@ from tools import search_listings as _search_listings_impl  # noqa: F401 — you
 # CallToolRequest" and the output you actually care about scrolls away.
 mcp = FastMCP("fitfindr", log_level="WARNING")
 
+"""
+This tool finds listings when there is a description. It needs sizes 
+such as (s)mall, (m) medium, (l), large. Use max_price to set an upper 
+limit on the range of the returned listings, filter by max_price.
+It returns a list of listing dictionaries.
+"""
+@mcp.tool() # MCP Decorator: function modifier that auto wraps standard Python functions, extracts their type hints and docstrings to generate JSON Schema definitions, and registers them as callable capabilities that an LLM can discover and execute.
 
-@mcp.tool()
 def search_listings(
     description: str,
     size: str | None = None,
