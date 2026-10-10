@@ -76,3 +76,28 @@ def validate() -> list[str]:
                 f"it should be one of {WARDROBES}"
             )
     return problems
+
+"""
+All 5 scenarios ran cleanly end-to-end (single-try smoke test, 
+not the full 5× eval you'll ask for next) — no crashes, and 
+each branch behaved as its criterion expects: criterion 2 
+stopped early with `item: None`, criterion 5 correctly 
+triggered the "Since this is the very first piece in their 
+wardrobe" general-advice path.
+
+**What's in [scenarios.py](scenarios.py) now** — exactly 5 scenarios, 
+one per criterion, so the run log's rows line up 1:1 with criteria.md numbering:
+
+| Criterion | Scenario | Query | Wardrobe | Why this shape |
+|---|---|---|---|---|
+| 1 | `matching query completes` | *(unchanged)* vintage graphic tee under $30 | example | Already shipped correctly — a query the data can match |
+| 2 | `impossible query stops early` | *(unchanged)* designer ballgown size XXS under $5 | example | Already shipped correctly — the empty-search branch |
+| 3 | `selected item id persists` *(new)* | 90s track jacket in size M | example | Criterion 3 only needs *any* matching query — it's checking `session["selected_item"]["id"]` against what reached `suggest_outfit`/`create_fit_card`, not the query text |
+| 4 | `fit card has required metadata` *(new)* | silk slip dress in midi length under $40 | example | One scenario, 5 tries (handled automatically by `run_eval.py`), gives 5 independent fit cards for the *same* selected item — exactly what "same item run more than once" needs |
+| 5 | `empty wardrobe gets general advice` *(relabeled)* | *(unchanged)* denim jacket under $50 | empty | The scenario that shipped as a `criterion: None` diagnostic already does exactly what criterion 5 asks — a matching query with an empty wardrobe — so I pointed its `criterion` at 5 instead of adding a duplicate |
+
+No full `run_eval.py --label before` run was done — that's the 
+actual test you said you'd ask for next. This was just 
+wiring + a single-try sanity check to confirm the scenarios 
+execute without error before you spend real tries on them.
+"""
