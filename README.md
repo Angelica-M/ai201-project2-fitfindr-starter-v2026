@@ -215,7 +215,7 @@ Found these broken-in vintage Levi's 501 jeans on Depop for $38 and my closet ha
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════ -->
 ---
 
-## Run Log — Before
+## Run Log — Before Improvements
 <!-- Five criteria, five tries each, in this exact format.
 
      Five, because your criteria are written out of five. Mark each try PASS
@@ -227,18 +227,85 @@ Found these broken-in vintage Levi's 501 jeans on Depop for $38 and my closet ha
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Selected item ID persists across tool calls | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card contains required metadata and valid length | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Empty wardrobe triggers general styling advice | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Real output from one try**, pasted as text, naming the file and function
-that produced it:
+Full 25-try log (5 scenarios × 5 tries, caching off): `results/run_2026-10-10_1840_before.md`, produced by `run_eval.py::main` calling `agent.py::run_agent` once per try.
+
+**Real output, one try per criterion**, pasted as text, naming the file and function that produced it:
+
+**Criterion 1** — produced by `agent.py::run_agent` (scenario "matching query completes", try 1):
 
 ```
+[1] parse_query
+      in:  vintage graphic tee under $30
+      out: dict with keys: description, size, max_price
+[2] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: 10 items: Y2K Baby Tee — Butterfly Print, Graphic Tee — 2003 Tour Bootleg Style, Vintage Band Tee — Faded Grey … +7 more
+      →    branch: results found, continuing to suggest_outfit
+[3] suggest_outfit
+      in:  Y2K Baby Tee — Butterfly Print ($18.0, depop)
+      out: Here are two outfit suggestions that pair the Y2K Butterfly Baby Tee with items already in your wardrobe, blen…
+[4] create_fit_card
+      in:  Here are two outfit suggestions that pair the Y2K Butterfly Baby Tee with items already in your wardrobe, blen…
+      out: Found this absolute holy grail Y2K butterfly baby tee for just $18, and I’m already planning on throwing it on…
+
+Fit card: Found this absolute holy grail Y2K butterfly baby tee for just $18, and I’m already planning on throwing it on with some baggy dark-wash denim and chunky sneakers for that off-duty model look. Seriously cannot believe my luck scoring this on depop today.
+```
+
+**Criterion 2** — produced by `agent.py::run_agent` (scenario "impossible query stops early", try 1):
 
 ```
+[1] parse_query
+      in:  designer ballgown size XXS under $5
+      out: dict with keys: description, size, max_price
+[2] search_listings (via MCP)
+      in:  dict with keys: description, size, max_price
+      out: [] (empty)
+      →    branch: empty, stopping before suggest_outfit
+
+- stopped early: yes — No listings matched. Try a higher price ceiling, a different size, or broader keywords in the description.
+- selected_item: (none)
+- search_results: 0
+```
+
+**Criterion 3** — produced by `agent.py::run_agent`, verified with a spy wrapped around `tools.py::suggest_outfit` and `tools.py::create_fit_card` to capture the literal `id` each one actually received (query: "90s track jacket in size M", all 5 tries shown since this is the exact evidence the criterion asks for):
+
+```
+Try 1: session.selected_item.id='lst_004'  suggest_outfit received='lst_004'  create_fit_card received='lst_004'  -> PASS
+Try 2: session.selected_item.id='lst_004'  suggest_outfit received='lst_004'  create_fit_card received='lst_004'  -> PASS
+Try 3: session.selected_item.id='lst_004'  suggest_outfit received='lst_004'  create_fit_card received='lst_004'  -> PASS
+Try 4: session.selected_item.id='lst_004'  suggest_outfit received='lst_004'  create_fit_card received='lst_004'  -> PASS
+Try 5: session.selected_item.id='lst_004'  suggest_outfit received='lst_004'  create_fit_card received='lst_004'  -> PASS
+```
+
+**Criterion 4** — produced by `tools.py::create_fit_card` (scenario "fit card has required metadata", try 1, item: `90s Silk Slip Dress — Floral, Midi Length`, $30.0, depop):
+
+```
+Manifesting 90s supermodel energy with this vintage floral silk slip dress I just scored on Depop for $30. It’s giving romantic cottagecore until you throw on a beat-up denim jacket and combat boots to tougunt it up. Honestly obsessed with how easy it is to dress down with an oversized crewneck for daytime.
+```
+
+3 sentences (within the 2–4 range); mentions the item ("silk slip dress"), the price ("$30"), and the platform ("Depop") once each.
+
+**Criterion 5** — produced by `tools.py::suggest_outfit` (scenario "empty wardrobe gets general advice", try 1, wardrobe: `{"items": []}`):
+
+```
+A light-wash, cropped vintage denim jacket is one of the ultimate wardrobe workhorses. Because it has a lighter color palette and a cropped silhouette, it naturally draws the eye upward, creates definition at the waist, and brings an effortless, casual cool to an outfit. 
+
+Since this is the very first piece in a brand-new digital wardrobe, here is some foundational styling advice to help build around it.
+
+---
+
+### 1. Silhouette Pairing (Proportions)
+Because the jacket is **cropped**, it plays best with pieces that contrast or complement that cut:
+*   **High-Waisted Bottoms:** High-waisted mom jeans, wide-leg trousers, cargo pants, or midi skirts are a match made in heaven. They meet the hem of the jacket (or sit just slightly under it), which elongates your legs and creates a balanced silhouette.
+```
+
+(truncated here — full text is 1,500+ characters of general styling advice in `results/run_2026-10-10_1840_before.md`, under "empty wardrobe gets general advice" → Try 1.) Non-empty, no error, no owned pieces referenced since there were none to reference.
 
 ---
 
@@ -757,7 +824,7 @@ $ python app.py ask 'vintage graphic tee under $30' --trace
 
 **Which failure it was meant to fix:**
 
-### Run Log — After
+### Run Log — After Improvements
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
