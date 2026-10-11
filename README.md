@@ -826,25 +826,43 @@ $ python app.py ask 'vintage graphic tee under $30' --trace
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** One line, in `tools.py::create_fit_card`'s prompt. Before:
 
-**Which failure it was meant to fix:**
+> "Write 2 to 4 sentences. Mention the item, its price, and the platform each exactly once, and be specific about the vibe rather than generic."
+
+After:
+
+> "Write 2 to 4 sentences. Mention the item, its price as a numeral with a dollar sign exactly as given above (e.g. "$30" — never spelled out, like "thirty dollars" or "thirty bucks"), and the platform, each exactly once, and be specific about the vibe rather than generic."
+
+Nothing else changed — not the loop, not the other two tools, not the scenarios.
+
+**Which failure it was meant to fix:** The mechanism named in the Milestone 4 diagnosis and the revision to criterion 4 in `criteria.md`: Try 3 of "fit card has required metadata" in the before run wrote *"...on Depop for thirty bucks..."* instead of a numeral. The old prompt only said "mention... its price," never specifying the format, so the model was free to spell it out. The fix tells it explicitly what "mentions the price" has to look like.
 
 ### Run Log — After Improvements
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Impossible query stops before the second tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Selected item ID persists across tool calls | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card contains required metadata and valid length *(revised wording)* | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Empty wardrobe triggers general styling advice | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
-**Did it help, and how do I know:**
-<!-- If it made things worse, say that. Honestly reported, that earns full
-     credit and is more interesting than one that worked. -->
+Full log: `results/run_2026-10-10_1919_after.md`, produced the same way as the before log — `run_eval.py::main` calling `agent.py::run_agent`, caching off, 5 scenarios × 5 tries.
 
+**Before vs. after, side by side, on the thing that actually changed** — the 5 fit cards from "fit card has required metadata" (same item, same query, both runs):
 
+| | Before (`run_2026-10-10_1840_before.md`) | After (`run_2026-10-10_1919_after.md`) |
+|---|---|---|
+| Try 1 | "...I just scored on Depop for **$30**." | "...on depop for **$30**..." |
+| Try 2 | "...off depop for **$30**..." | "...on depop for just **$30**..." |
+| Try 3 | "...off Depop for **thirty bucks**..." ⚠️ | "...on depop for **$30**..." |
+| Try 4 | "...on depop for just **$30**..." | "...on Depop for **$30**..." |
+| Try 5 | "...on Depop for just **$30**..." | "...on depop for only **$30**..." |
+
+I also spot-checked the fit cards from the other three scenarios that call `create_fit_card` (criteria 1, 3, and 5) in the after run — all 15 of those used a numeral price too (`$18.00`, `$45.00`, `$42.00`), so the fix generalized past the one scenario it was diagnosed from, not just the one I was staring at.
+
+**Did it help, and how do I know:** Partially, and I want to be precise about what "helped" means here rather than round it up. Criterion 4's **verdict didn't move** — it was already MET (5/5) in the before run, because I'd scored "thirty bucks" as a PASS (it does communicate the price). What changed is the thing the diagnosis actually flagged: the *ambiguous* case is gone. Before: 1 of 5 fit cards used a spelled-out price that a stricter grader could have failed. After: 0 of 5 did, across both the targeted scenario and the other three I checked. So the fix did exactly what it was meant to do — it closed the gap between "the criterion technically passed" and "the criterion passed unambiguously" — but because the headline number was already 5/5, this run can't show a MISSED-to-MET flip to prove it. A test that could actually detect a regression here would need a stricter grading rule (reject non-numeral prices outright) rather than relying on my judgment calls when scoring PASS/FAIL by hand.
 
 ---
 

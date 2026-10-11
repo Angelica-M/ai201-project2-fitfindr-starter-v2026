@@ -244,8 +244,10 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
         f"Colors: {', '.join(new_item['colors'])}\n"
         f"Style: {', '.join(new_item['style_tags'])}\n\n"
         f"Outfit idea to work in: {outfit}\n\n"
-        "Write 2 to 4 sentences. Mention the item, its price, and the "
-        "platform each exactly once, and be specific about the vibe rather "
+        "Write 2 to 4 sentences. Mention the item, its price as a numeral "
+        "with a dollar sign exactly as given above (e.g. \"$30\" — never "
+        "spelled out, like \"thirty dollars\" or \"thirty bucks\"), and the "
+        "platform, each exactly once, and be specific about the vibe rather "
         "than generic."
     )
 
