@@ -212,6 +212,18 @@ Found these broken-in vintage Levi's 501 jeans on Depop for $38 and my closet ha
 - *What came back:* Claude ran Pyright directly to confirm the exact error (`reportArgumentType` — `str` isn't assignable to `float`) rather than guessing, and explained why it happens: `call_config = {"temperature": temperature}` lets the type checker infer `dict[str, float]`, so assigning a `str` value into it on the next line is flagged, even though it runs fine at runtime.
 - *What I changed:* I had Claude add an explicit type annotation, `call_config: dict[str, float | str] = {"temperature": temperature}`, and confirmed with a second Pyright run that it dropped to 0 errors without changing any runtime behavior.
 
+**Moment 3 — unit 4**
+
+- *What I asked for:* Move `search_listings` onto MCP (Milestone 1) — wire `mcp_server.py` and point `agent.py::run_agent` at it instead of calling the tool directly.
+- *What came back:* Claude uncommented the `@mcp.tool()` registration and wrote the tool description from scratch rather than copying the docstring, then swapped the direct call in `run_agent()` for `mcp_client.call_tool(...)`. Before flipping the switch, it compared the MCP response against the direct call on the same input and confirmed the output was identical in shape and content, then re-ran both the happy path and the empty-search path end-to-end afterward to check nothing regressed.
+- *What I changed:* Nothing to correct — the rewire worked on the first attempt. What I did take from this was that the verification step (compare-before-switching, not just "it ran without an error") is what actually earns the "did anything behave differently" claim in the README, rather than just asserting it.
+
+**Moment 4 — unit 4**
+
+- *What I asked for:* Call each of my 5 criteria MET or MISSED against the before run log, and diagnose every miss by step and mechanism (Milestone 4).
+- *What came back:* All 5 came back MET on the raw pass count, but instead of stopping there, Claude separated which MET verdicts were architecturally guaranteed (criteria 2, 3, 5 — deterministic code branches that should never miss) from the two built around model variance (criteria 1, 4), where a clean 5/5 is weaker evidence. It surfaced one specific try — a fit card that said "thirty bucks" instead of "$30" — that I'd scored PASS, but that revealed criterion 4's wording never actually defined whether a spelled-out amount counts as "mentions the price."
+- *What I changed:* I revised criterion 4 in `criteria.md` to require a numeral with a currency symbol, without deleting the original line, and in Milestone 5 changed `create_fit_card`'s prompt to explicitly require that format instead of leaving it to chance.
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════ -->
 ---
 
@@ -753,6 +765,8 @@ identical content: True
 ```
 Then re-ran both the happy path and the empty-search path end to end through `python app.py ask ... --trace` — both produced the same results as before the rewire, just with `[2] search_listings (via MCP)` in place of `[2] search_listings` in the trace. The rewire worked on the first attempt; no failure to document here.
 
+**Update, Milestone 6:** the two full `run_eval.py` passes (before and after) called `search_listings` over MCP 25 times each — 50 subprocess round-trips total, each one starting the server fresh, per `mcp_client.py`'s own design — with zero MCP-related failures across either run. That's more exercise than the original single-call comparison got, and it held up. One gap this surfaced, though: `run_agent()` only wraps `suggest_outfit` and `create_fit_card` in a `try/except ModelUnavailable` (see Failure Handling below) — the `call_tool("search_listings", ...)` line has no equivalent handler, so if the MCP server failed to start or `mcp_client.py` raised `MCPError`, it would still crash out of `run_agent()` unhandled, the same way a bad API key used to. It never happened in 50 calls, but "never happened yet" isn't the same as "handled." Named in What's Still Broken below rather than fixed here, since it wasn't the failure Milestone 5's diagnosis pointed at.
+
 ### Failure Handling
 
 Of the three failure modes tested, only **model unavailable** actually crashed — empty search and empty wardrobe already returned clean messages/advice with no handler needed.
@@ -871,7 +885,23 @@ I also spot-checked the fit cards from the other three scenarios that call `crea
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
 
+No criterion is currently scored MISSED — both the before and after run logs read 5/5 across all five. That's a real result, not something to round down, but it isn't the same as "nothing left to do." Here's what's genuinely unresolved, named rather than swept under a clean scoreboard:
 
+**1. Criterion 1's target has never actually been tested against the risk it names.** `criteria.md` sets 4 of 5 because plain keyword-overlap search can miss on phrasing or synonyms a user actually types — but the scenario for criterion 1 reuses one easy, generously-matching query ("vintage graphic tee under $30") for all 5 tries. A 5/5 here mostly proves that query is easy, not that the agent handles the harder phrasing the target was written to anticipate.
+   - *What I'd do:* add one or two more scenarios to `scenarios.py` under criterion 1, deliberately using synonym-heavy or imprecise phrasing (e.g. wording that doesn't share dataset vocabulary) to see whether the 4-of-5 target actually gets exercised.
+   - *Why I stopped there:* Milestone 5 was explicitly one change, and the diagnosis from Milestone 4 pointed at criterion 4's price-format ambiguity with concrete evidence (an actual try that said "thirty bucks"), not at criterion 1, which was a reasoning gap rather than an observed failure. I fixed the one I had evidence for.
+
+**2. Criterion 4's fix is a prompt instruction, not a guarantee.** `create_fit_card` now tells the model to write the price as a numeral, and 20 of 20 fit cards across both the before-vs-after comparison and my spot-check followed it — but that's still the model choosing to comply, not code enforcing it. Nothing in `tools.py` would catch it if the model drifted back to "thirty bucks" on some future call.
+   - *What I'd do:* add a lightweight regex check after `generate()` returns in `create_fit_card` — something like confirming `f"${new_item['price']:g}"` or an equivalent numeral pattern appears in the text — and either retry once or flag it, rather than trusting the instruction alone.
+   - *Why I stopped there:* this is closer to "add a second branch" than "rewrite one prompt," and Milestone 5 asked for one change. I made the cheaper fix first since it had direct evidence behind it; the validation layer is the next one if a future run shows the prompt instruction alone isn't holding.
+
+**3. `search_listings` has no failure handler, unlike the other two tools.** Covered in the MCP-move update above — `suggest_outfit` and `create_fit_card` are wrapped in `try/except ModelUnavailable`, but the `call_tool("search_listings", ...)` call isn't wrapped in anything. An `MCPError` (server won't start, tool not registered, a broken stdio pipe) would still crash `run_agent()` unhandled.
+   - *What I'd do:* add a `try/except MCPError` around that call, mirroring the pattern already used for the model calls, setting `session["error"]` to something like "Couldn't reach the search tool — see mcp_client.py's error for how to check mcp_server.py on its own" and returning early.
+   - *Why I stopped there:* it never happened — 50 MCP calls across both eval runs, zero failures — so there was no observed instance to diagnose, and none of my five criteria test this path. It's a real gap, just not one the data asked me to close yet.
+
+**4. `trace.step()` prints on every `ask` call, not just when `--trace` is passed.** Noticed while running the failure-mode tests in Milestone 2 — because `trace.py::step()` calls `print()` unconditionally, every `run_agent()` call shows its trace, regardless of the CLI flag. Cosmetic only; it doesn't affect any criterion.
+   - *What I'd do:* have `trace.step()` only print when a trace is actually active (e.g., track whether `start_trace()` was called this run) instead of always printing and only conditionally *capturing*.
+   - *Why I stopped there:* out of scope for every milestone that came up — it was never the thing a diagnosis pointed at, just something I noticed in passing and kept meaning to flag rather than fix on the side.
 
 <!-- ═════════════════════════════════════════════════════════════════════
 
