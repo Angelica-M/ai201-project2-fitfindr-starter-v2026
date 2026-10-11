@@ -942,9 +942,10 @@ No criterion is currently scored MISSED — both the before and after run logs r
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**
 
 ⛓️‍💥 **Web Sequence Diagram:**
+
 <img src="assets/FitFindr_webSeqDiagram.jpg" alt="Web Sequence Diagram" width="400"/>
 
-# FitFinder (`fitfitr`) Architecture & Execution Flow
+# FitFinder Architecture & Execution Flow
 
 This section provides an architectural breakdown and sequence analysis of the **FitFinder** (`fitfitr`) agent application. Designed as a reference for the project **README**, this breakdown maps out the end-to-end request lifecycle, client-server decoupling, and tool-calling mechanics powered by FastMCP over `stdio` transport.
 
@@ -974,9 +975,9 @@ The sequence diagram defines four primary participants across the system archite
 2. **Harness Parsing**: `agent.py (harness)` processes the raw input string internally:
 * *Operation*: `Parse query into description, size, and max_price`
 * *Extracted Parameters*:
-* `description` (String)
-* `size` (String/Descriptor)
-* `max_price` (Numeric/Constraint)
+     * `description` (String)
+     * `size` (String/Descriptor)
+     * `max_price` (Numeric/Constraint)
 
 ### Phase 2: MCP Tool Invocation & Transport
 
