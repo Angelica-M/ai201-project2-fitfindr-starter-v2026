@@ -942,7 +942,7 @@ No criterion is currently scored MISSED — both the before and after run logs r
 📖 **How to run this project: [RUNNING.md](RUNNING.md)**
 
 ⛓️‍💥 **Web Sequence Diagram:** <br>
-<img src="assets/FitFindr_webSeqDiagram.jpg" alt="Web Sequence Diagram" width="780"/>
+<img src="assets/FitFindr_webSeqDiagram.jpg" alt="Web Sequence Diagram" width="820"/>
 
 # FitFinder Architecture & Execution Flow
 
