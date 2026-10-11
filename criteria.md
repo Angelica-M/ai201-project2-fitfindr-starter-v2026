@@ -73,6 +73,10 @@ Given a valid outfit suggestion and listing input, `create_fit_card` returns a 2
 **Why this target:**
 I picked 4 of 5 because `create_fit_card` relies on generative LLM output with `TEMPERATURE > 0.0`; while prompt engineering enforces sentence count and metadata inclusion, occasional stochastic variations in model output may omit a required field or alter sentence formatting.
 
+> **Revised in unit 4:** Given a valid outfit suggestion and listing input, `create_fit_card` returns a 2-to-4 sentence caption that explicitly mentions the item's title, its price as a numeral with a currency symbol (e.g. "$30" — not "thirty bucks"), and its platform — in at least 4 of 5 tries.
+>
+> **Why revised:** In the unit 4 "before" run, one fit card read *"...on Depop for thirty bucks..."* instead of a numeral (`results/run_2026-10-10_1840_before.md`, scenario "fit card has required metadata" → Try 3). I scored it PASS at the time, since it clearly communicates the price — but the original wording, "explicitly mentions ... price," never said whether a spelled-out amount counts. A stricter reading could have scored the same output a FAIL. That's not a target that was too easy; it's one that couldn't be measured the same way twice, which is exactly the problem a criterion is supposed to rule out.
+
 ---
 
 ## 5. Empty wardrobe triggers general styling advice

@@ -328,15 +328,21 @@ Because the jacket is **cropped**, it plays best with pieces that contrast or co
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Matching query completes all three tools | 4 of 5 | MET (5/5) | All 5 tries of `agent.py::run_agent` (scenario "matching query completes") ran `search_listings` → `suggest_outfit` → `create_fit_card` and returned a non-empty fit card — 5 passes against a 4-of-5 target, in `results/run_2026-10-10_1840_before.md`. |
+| 2 | Impossible query stops before the second tool | 5 of 5 | MET (5/5) | All 5 tries set `session["error"]` to a message naming what to change (price/size/keywords), and the run log's model-call count was 0 for every try — `suggest_outfit` never ran. 5/5 against a 5-of-5 target. |
+| 3 | Selected item ID persists across tool calls | 5 of 5 | MET (5/5) | A spy wrapped around `tools.py::suggest_outfit` and `tools.py::create_fit_card` captured the literal `id` each one received across 5 independent runs; all 5 matched `session["selected_item"]["id"]` exactly (`lst_004` every time). 5/5. |
+| 4 | Fit card contains required metadata and valid length | 4 of 5 | MET (5/5) | All 5 fit cards for the slip-dress item (`tools.py::create_fit_card`) were 2–3 sentences and named the item, a price, and the platform. 5/5 against a 4-of-5 target — see the note under Diagnoses below, though, before reading this as an unqualified win. |
+| 5 | Empty wardrobe triggers general styling advice | 5 of 5 | MET (5/5) | All 5 tries with `wardrobe = {"items": []}` returned non-empty, item-specific advice from `tools.py::suggest_outfit`, named no owned pieces (there were none), and raised nothing. 5/5. |
 
 **Diagnoses**
 
+No criterion missed this run, so there's no step/mechanism to diagnose under the "tool, branch, session, or model output" rubric — that rubric is for explaining a failure, and this run didn't produce one. Saying "nothing missed" is not the same as saying "nothing to report," though, so here's the plain read instead of the comfortable one.
 
+**Were the targets too low?** Not evenly. Criteria 2, 3, and 5 are all pinned to deterministic code — an `if not results:` branch, a dict assignment, an `if not wardrobe.get("items")` check — exactly as `criteria.md` already argues. A 5-of-5 result there isn't a cushion, it's the floor; anything less would mean an actual code defect, not a borderline case. I wouldn't tighten those.
+
+Criteria 1 and 4 are the ones built around LLM variance, and both came back 5/5 against a 4-of-5 target — on paper, a clean win. But looking at *how* they were tested rather than just the score: criterion 1's scenario reused one easy, generously-matching query ("vintage graphic tee under $30") for all 5 tries, instead of 5 different phrasings. That query was never likely to miss on keyword overlap, so a 5/5 here mostly shows the test didn't stress the failure mode the target was written to anticipate — not that the agent is better than the target assumed. That's a scenario-design gap, not a target-leniency one, and I'm naming it rather than quietly taking the win.
+
+Criterion 4 turned up something more concrete. Try 3 of "fit card has required metadata" read *"...on Depop for thirty bucks..."* instead of a numeral — see `results/run_2026-10-10_1840_before.md`, "fit card has required metadata" → Try 3. I counted it PASS, because "thirty bucks" unambiguously communicates the price. But the criterion as written — *"explicitly mentions the item's... price"* — never actually says whether a spelled-out amount satisfies that. A different, stricter grader could have called the same output a FAIL, and the criterion gives no way to settle it. That's not a target that was too loose; it's a target that couldn't be scored the same way twice, which is exactly the failure mode `criteria.md`'s own guidance warns about. **This is the criterion I'd tighten** — revised below, original left in place.
 
 ---
 
